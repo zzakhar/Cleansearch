@@ -19,7 +19,7 @@
 // @author         zzakhar
 // @copyright      2024, zzakhar (https://openuserjs.org/users/zzakhar)
 // @license        MIT
-// @version        2.8.0
+// @version        2.8
 // ==/UserLibrary==
 
 (function() {
