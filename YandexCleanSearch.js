@@ -19,6 +19,8 @@
 // @copyright      2024, zzakhar (https://openuserjs.org/users/zzakhar)
 // @license        MIT
 // @version        2.8
+// @match          https://yandex.ru/search/*
+// @exclude        https://yandex.ru/search/?text=*&lr=*
 // ==/UserLibrary==
 
 (function() {
