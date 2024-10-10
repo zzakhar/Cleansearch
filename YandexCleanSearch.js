@@ -13,7 +13,7 @@
 
 // ==UserLibrary==
 // @name           Yandex CleanSearch
-// @description    Yandex CleanSearch
+// @description    Блокировка страниц по домену и заголовкам, рекламы и прочего дерьма в Яндекс.
 // @author         zzakhar
 // @copyright      2024, zzakhar (https://openuserjs.org/users/zzakhar)
 // @license        OSI-SPDX-Short-Identifier
