@@ -2,7 +2,7 @@
 // @namespace      https://openuserjs.org/users/zzakhar
 // @name           Yandex CleanSearch
 // @name-ru        Yandex CleanSearch
-// @version        2.8
+// @version        2.81
 // @description    Блокировка страниц по домену и заголовкам, рекламы и прочего дерьма в Яндекс.
 // @author         zzakhar
 // @match          https://yandex.ru/search/*
