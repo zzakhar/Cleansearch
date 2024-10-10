@@ -14,8 +14,8 @@
 // ==/UserScript==
 
 // ==UserLibrary==
-// @name           Yandex CleanSearch Library
-// @description    Библиотека для поддержки функциональности скрипта Yandex CleanSearch
+// @name           Yandex CleanSearch
+// @description    Блокировка страниц по домену и заголовкам, рекламы и прочего дерьма в Яндекс.
 // @author         zzakhar
 // @copyright      2024, zzakhar (https://openuserjs.org/users/zzakhar)
 // @license        MIT
