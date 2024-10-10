@@ -12,7 +12,7 @@
 // ==/UserScript==
 
 // ==UserLibrary==
-// @name           Idk wth is this
+// @name           Yandex CleanSearch
 // @description    Yandex CleanSearch
 // @author         zzakhar
 // @copyright      2024, zzakhar (https://openuserjs.org/users/zzakhar)
