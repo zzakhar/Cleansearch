@@ -7,19 +7,19 @@
 // @author         zzakhar
 // @match          https://yandex.ru/search/*
 // @exclude        https://yandex.ru/search/?text=*&lr=*
-//// @grant          GM_xmlhttpRequest
+// @grant          GM_xmlhttpRequest
 // @icon           https://avatars.mds.yandex.net/i?id=6a46c4318776cd395ef17ab922147471976ebe7d-3569718-images-thumbs&n=13
 // @copyright      2024, zzakhar (https://openuserjs.org/users/zzakhar)
-// @license        OSI-SPDX-Short-Identifier
+// @license        MIT
 // ==/UserScript==
 
 // ==UserLibrary==
-// @name           Yandex CleanSearch
-// @description    Блокировка страниц по домену и заголовкам, рекламы и прочего дерьма в Яндекс.
+// @name           Yandex CleanSearch Library
+// @description    Библиотека для поддержки функциональности скрипта Yandex CleanSearch
 // @author         zzakhar
 // @copyright      2024, zzakhar (https://openuserjs.org/users/zzakhar)
-// @license        OSI-SPDX-Short-Identifier
-// @version        2.8
+// @license        MIT
+// @version        2.8.0
 // ==/UserLibrary==
 
 (function() {
