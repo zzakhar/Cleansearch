@@ -3,12 +3,11 @@
 // @name-ru      Yandex CleanSearch
 // @namespace    https://github.com/zzakhar/Js/blob/main/YandexCleanSearch.js
 // @version      2.8
-// @description  Блокировка страниц по домену и заголовкам, рекламы и прочего дерьма в яндекс.
+// @description  Блокировка страниц по домену и заголовкам, рекламы и прочего дерьма в Яндекс.
 // @author       Zzakhar
 // @match        https://yandex.ru/search/*
-// @grant        https://github.com/zzakhar/Js/blob/main/YandexCleanSearch.js
+// @grant        none
 // @icon         https://avatars.mds.yandex.net/i?id=6a46c4318776cd395ef17ab922147471976ebe7d-3569718-images-thumbs&n=13
-// @require      https://github.com/zzakhar/Js/blob/main/YandexCleanSearch.js
 // ==/UserScript==
 
 (function() {
