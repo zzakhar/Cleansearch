@@ -6,6 +6,7 @@
 // @author       Zzakhar
 // @match        https://yandex.ru/search/*
 // @grant        none
+// @license      CC BY-NC-ND 
 // ==/UserScript==
 
 (function() {
