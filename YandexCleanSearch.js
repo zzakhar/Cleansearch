@@ -1,14 +1,24 @@
 // ==UserScript==
-// @name         Yandex CleanSearch
-// @name-ru      Yandex CleanSearch
-// @namespace    https://github.com/zzakhar/Js/blob/main/YandexCleanSearch.js
-// @version      2.8
-// @description  Блокировка страниц по домену и заголовкам, рекламы и прочего дерьма в Яндекс.
-// @author       Zzakhar
-// @match        https://yandex.ru/search/*
-// @grant        none
-// @icon         https://avatars.mds.yandex.net/i?id=6a46c4318776cd395ef17ab922147471976ebe7d-3569718-images-thumbs&n=13
+// @namespace      https://openuserjs.org/users/zzakhar
+// @name           Yandex CleanSearch
+// @name-ru        Yandex CleanSearch
+// @version        2.8
+// @description    Блокировка страниц по домену и заголовкам, рекламы и прочего дерьма в Яндекс.
+// @author         zzakhar
+// @match          https://yandex.ru/search/*
+// @exclude        https://yandex.ru/search/?text=*&lr=*
+//// @grant          GM_xmlhttpRequest
+// @icon           https://avatars.mds.yandex.net/i?id=6a46c4318776cd395ef17ab922147471976ebe7d-3569718-images-thumbs&n=13
 // ==/UserScript==
+
+// ==UserLibrary==
+// @name           Idk wth is this
+// @description    Yandex CleanSearch
+// @author         zzakhar
+// @copyright      2024, zzakhar (https://openuserjs.org/users/zzakhar)
+// @license        OSI-SPDX-Short-Identifier
+// @version        0.0.0
+// ==/UserLibrary==
 
 (function() {
     'use strict';
