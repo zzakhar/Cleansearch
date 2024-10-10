@@ -10,6 +10,7 @@
 //// @grant          GM_xmlhttpRequest
 // @icon           https://avatars.mds.yandex.net/i?id=6a46c4318776cd395ef17ab922147471976ebe7d-3569718-images-thumbs&n=13
 // @copyright      2024, zzakhar (https://openuserjs.org/users/zzakhar)
+// @license        OSI-SPDX-Short-Identifier
 // ==/UserScript==
 
 // ==UserLibrary==
