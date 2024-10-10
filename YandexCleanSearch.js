@@ -51,7 +51,7 @@
             resultsContainer.prepend(counterCard);
         }
 
-        const counterText = `Заблокировано: ${blockedPropagandaCount} пророссийской пропаганды и ${blockedAdsCount} рекламы`;
+        const counterText = `Заблокировано: ${blockedPropagandaCount} ненужного мусора и ${blockedAdsCount} рекламы.`;
         let textElement = counterCard.querySelector('.counter-text');
         if (!textElement) {
             textElement = document.createElement('div');
