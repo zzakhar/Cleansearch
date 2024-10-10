@@ -8,7 +8,6 @@
 // @match          https://yandex.ru/search/*
 // @exclude        https://yandex.ru/search/?text=*&lr=*
 // @grant          GM_xmlhttpRequest
-// @icon           https://avatars.mds.yandex.net/i?id=6a46c4318776cd395ef17ab922147471976ebe7d-3569718-images-thumbs&n=13
 // @copyright      2024, zzakhar (https://openuserjs.org/users/zzakhar)
 // @license        MIT
 // ==/UserScript==
