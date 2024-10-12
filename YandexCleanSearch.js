@@ -1,16 +1,29 @@
 // ==UserScript==
 // @name         Yandex CleanSearch
 // @namespace    http://tampermonkey.net/
-// @version      2.8
+// @version      3.0
 // @description  Блокировка страниц по домену и заголовкам, рекламы и прочего дерьма в яндекс.
 // @author       Zzakhar
 // @match        https://yandex.ru/search/*
+// @match        ya.ru/*
 // @grant        none
-// @license      CC BY-NC-ND 
+// @license      CC BY-NC-ND
+// @downloadURL https://update.greasyfork.org/scripts/512108/Yandex%20CleanSearch.user.js
+// @updateURL https://update.greasyfork.org/scripts/512108/Yandex%20CleanSearch.meta.js
 // ==/UserScript==
 
 (function() {
     'use strict';
+    // auto redirect ya.ru/search to legit page
+    function autoredirecttolegit() {
+        if (window.location.hostname === "ya.ru" && window.location.pathname === "/search/") {
+            const urlParams = new URLSearchParams(window.location.search);
+            const text = urlParams.get('text');
+            if (text) {
+                window.location.href = `https://yandex.ru/search/?text=${text}`;
+            }
+        }
+    }
 
     // Дб локал
     let blockedSites = JSON.parse(localStorage.getItem('blockedSites')) || [];
@@ -19,6 +32,66 @@
     let blockedAdsCount = 0;
     let blockedPropaganda = [];
     let isHidden = true;
+
+
+    //перенес все в 1 функцию для блока дерьма и рекламы
+    function blockContainers() {
+        if (window.location.hostname === 'ya.ru') {
+            const marketFeed = document.querySelector("body > main > div:nth-child(3) > div > div > noindex > div.market-feed");
+            if (marketFeed) {
+                marketFeed.style.display = 'none'; // Скрываем market-feed
+            }
+        } else if (window.location.pathname.includes('yandex.ru/search')) {
+            const containerToHide = document.querySelector("body > main > div > div.main__container > div > div > div.content__left > div.VanillaReact.RelatedBottom");
+            if (containerToHide) {
+                containerToHide.style.display = 'none';
+                console.log("Рекомендации скрыты.");
+            }
+        }
+    }
+
+
+    // remove shit from search bar
+
+    //deb for no lags
+    function debounce(func, delay) {
+        let debounceTimer;
+        return function () {
+            const context = this;
+            const args = arguments;
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+
+    // delete shit
+    function removeBlockedSuggestions() {
+        const suggestionList = document.querySelector('div.Root.Root_inited > div.HeaderDesktop > header > form > div.mini-suggest__popup.mini-suggest__popup_visible > ul.mini-suggest__popup-content');
+
+        if (suggestionList) {
+            const suggestionItems = suggestionList.querySelectorAll('li.mini-suggest__item');
+
+            suggestionItems.forEach((item) => {
+                const dataText = item.getAttribute('data-text');
+                const anchor = item.querySelector('a.mini-suggest__item-link');
+                let containsBlockedWord = false;
+                let containsBlockedLink = false;
+                if (dataText) {
+                    containsBlockedWord = blockedSites.some(site => dataText.includes(site));
+                }
+                if (anchor) {
+                    const href = anchor.href;
+                    containsBlockedLink = blockedSites.some(site => href.includes(site));
+                }
+                const subtitleDiv = anchor?.querySelector('div.mini-suggest__item-content > div.mini-suggest__item-subtitle > span.mini-suggest__item-label'); // чтобы удалялась реклама из поиска
+                if (subtitleDiv || containsBlockedWord || containsBlockedLink) {
+                    //console.log("Удалено из поиска:", item.getAttribute('data-text'));
+                    item.remove();
+                }
+            });
+        }
+    }
+
 
     // счетчик
     function updateBlockCounter() {
@@ -142,12 +215,6 @@
             }
         });
 
-        const containerToHide = document.querySelector("body > main > div > div.main__container > div > div > div.content__left > div.VanillaReact.RelatedBottom");
-        if (containerToHide) {
-            containerToHide.style.display = 'none';
-            console.log("Рекомендациии скрыты.");
-        }
-
         updateBlockCounter();
     }
 
@@ -185,19 +252,23 @@
      function saveBlockedSites() {
         localStorage.setItem('blockedSites', JSON.stringify(blockedSites));
     }
-    window.addEventListener('load', () => {
-        blockLinksAndAds();
-    });
-    //основной цикл
-    const observer = new MutationObserver(() => {
-        if (isHidden) {
-            blockLinksAndAds();
-        }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+
+
 
     // настройки
 
+
+    function updateBlockedSitesList() {
+        const list = document.getElementById('blockedSitesList');
+        if (list){
+            list.innerHTML = '';
+            blockedSites.forEach(site => {
+                const li = document.createElement('li');
+                li.textContent = site;
+                list.appendChild(li);
+            });
+        }
+    }
 
     function resetBlockedSites() {
         blockedSites.length = 0;
@@ -208,96 +279,102 @@
         }, 2000);
         showNotification('Все заблокированные сайты были очищены.');
     }
-    function updateBlockedSitesList() {
-        const list = document.getElementById('blockedSitesList');
-        list.innerHTML = '';
-        blockedSites.forEach(site => {
-            const li = document.createElement('li');
-            li.textContent = site;
-            list.appendChild(li);
-        });
-    }
-    function createPopup() {
-        const popup = document.createElement('div');
-        popup.className = 'custom-popup';
-        popup.style.cssText = `
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: #0e1011;
-    border: 2px solid #970e05; /* Цвет рамки */
-    border-radius: 10px; /* Скругленные углы */
-    box-shadow: 0 0 15px #4c0803, 0 0 30px #8b0903;
-    padding: 20px;
-    z-index: 9999;
-    display: none;
-    width: 300px;
-    max-width: 90%;
-    transition: transform 0.3s ease, opacity 0.3s ease;
-    opacity: 0;
-`;
 
+function createPopup() {
+    const popup = document.createElement('div');
+    popup.className = 'custom-popup';
+    popup.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #0e1011;
+        border: 2px solid #970e05; /* Цвет рамки */
+        border-radius: 10px; /* Скругленные углы */
+        box-shadow: 0 0 15px #4c0803, 0 0 30px #8b0903;
+        padding: 20px;
+        z-index: 9999;
+        display: none;
+        width: 300px;
+        max-width: 90%;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        opacity: 0;
+    `;
+
+    // Определяем содержимое попапа в зависимости от текущего URL
+    const currentUrl = window.location.href;
+    if (currentUrl.includes('yandex.ru/search')) {
         popup.innerHTML = `
-    <h3>Yandex CleanSearch</h3>
-    <input type="text" id="siteInput" placeholder="Домен или заголовок (Например: rutube.ru)"
-           style="width: 90%; padding: 10px; margin-bottom: 10px;">
-    <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 10px;">
-        <button id="blockSiteBtn" style="
-            background-color: red;
-            color: white;
-            border: none;
-            border-radius: 20px;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s ease;
-        ">Заблокировать</button>
-        <button id="unblockSiteBtn" style="
-            background-color: green;
-            color: white;
-            border: none;
-            border-radius: 20px;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s ease;
-        ">Разблокировать</button>
-    </div>
-    <div style="display: flex; align-items: center; justify-content: space-between;">
-        <h4 style="margin: 0;">Заблокированные сайты:</h4>
-        <button id="resetBtn" style="
-            background-color: orange;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            padding: 5px 10px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: background-color 0.3s ease;
-        ">Сбросить</button>
-    </div>
-    <ul id="blockedSitesList" style="max-height: 80px; overflow-y: auto;"></ul>
-    <span id="closePopupBtn" style="
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        cursor: pointer;
-        font-size: 20px;
-        font-weight: bold;
-    ">&times;</span>
-`;
+            <h3>Yandex CleanSearch</h3>
+            <input type="text" id="siteInput" placeholder="Домен или заголовок (Например: rutube.ru)"
+                   style="width: 90%; padding: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 10px;">
+                <button id="blockSiteBtn" style="
+                    background-color: red;
+                    color: white;
+                    border: none;
+                    border-radius: 20px;
+                    padding: 10px 20px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: background-color 0.3s ease;">Заблокировать</button>
+                <button id="unblockSiteBtn" style="
+                    background-color: green;
+                    color: white;
+                    border: none;
+                    border-radius: 20px;
+                    padding: 10px 20px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: background-color 0.3s ease;">Разблокировать</button>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <h4 style="margin: 0;">Заблокированные сайты:</h4>
+                <button id="resetBtn" style="
+                    background-color: orange;
+                    color: white;
+                    border: none;
+                    border-radius: 10px;
+                    padding: 5px 10px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    transition: background-color 0.3s ease;">Сбросить</button>
+            </div>
+            <ul id="blockedSitesList" style="max-height: 80px; overflow-y: auto;"></ul>
+            <span id="closePopupBtn" style="
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                cursor: pointer;
+                font-size: 20px;
+                font-weight: bold;">&times;</span>
+        `;
+    } else if (currentUrl.includes('ya.ru')) {
+        popup.innerHTML = `
+            <h3>Yandex CleanSearch</h3>
+            <p>Скрипт был создан для TamperMonkey и написан для Javascript пользователем zzakhar. <br> Для использования скрипта начните поиск и введите запрос.
+            <br> Через несколько мгновений на странице поиска в левом верхнем углу появится иконка расширения, нажмите на нее и начните конфигурацию. Вы можете блокировать как домены, так и ключевые слова. <br> Спасибо за использование! </p>
+            <span id="closePopupBtn" style="
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                cursor: pointer;
+                font-size: 20px;
+                font-weight: bold;">&times;</span>
+        `;
+    }
 
-
-        document.body.appendChild(popup);
-
+    document.body.appendChild(popup);
+    if (currentUrl.includes('yandex.ru/search')) {
         document.getElementById('blockSiteBtn').addEventListener('click', blockSite);
         document.getElementById('unblockSiteBtn').addEventListener('click', unblockSite);
-        document.getElementById('closePopupBtn').addEventListener('click', () => {
-            popup.style.display = 'none';
-        });
         document.getElementById('resetBtn').addEventListener('click', resetBlockedSites);
     }
+
+    document.getElementById('closePopupBtn').addEventListener('click', () => {
+        popup.style.display = 'none';
+    });
+}
 
     function showPopup() {
         const popup = document.querySelector('.custom-popup');
@@ -355,11 +432,11 @@
     function unblockSite() {
         const site = document.getElementById('siteInput').value.toLowerCase();
         const index = blockedSites.indexOf(site);
-
         if (index !== -1) {
             blockedSites.splice(index, 1);
             saveBlockedSites();
             showNotification(`${site} has been unblocked.`);
+            updateBlockedSitesList()
             setTimeout(() => {
             location.reload();
             }, 2000);
@@ -368,27 +445,114 @@
         }
     }
 
+    function getHeaderLogo() {
+        let headerLogo = document.querySelector('header.HeaderDesktop-Main .HeaderLogo');
+        if (!headerLogo) {
+            headerLogo = document.querySelector('main.body__wrapper .headline');//for ya.ru
+        }
+        return headerLogo;
+    }
+
+    // иконка для настроек
     function createIcon() {
-    const icon = document.createElement('img');
-    icon.className = 'custom-icon';
-    icon.src = 'https://avatars.mds.yandex.net/i?id=6a46c4318776cd395ef17ab922147471976ebe7d-3569718-images-thumbs&n=13';
-    icon.alt = 'FREEINTERNET';
-    icon.style.cssText = `
-        position: fixed;
-        bottom: 110px; /* Подняли иконку на 100px */
-        right: 30.5px; /* Сдвинули иконку левее на 20px */
-        width: 55px;
-        height: 55px;
-        border-radius: 50%;
-        cursor: pointer;
-        z-index: 9999;
-    `;
-    document.body.appendChild(icon);
+        const headerLogo = getHeaderLogo();
 
-    icon.addEventListener('click', showPopup);
-}
+        if (!headerLogo) {
+            console.error('Логотип не найден');
+            return;
+        }
 
-    createPopup();
-    createIcon();
+        headerLogo.removeAttribute('href'); // rem href
+        headerLogo.style.cursor = 'default';
 
+        const icon = document.createElement('img');
+        icon.className = 'custom-icon';
+        icon.src = 'https://avatars.mds.yandex.net/i?id=6a46c4318776cd395ef17ab922147471976ebe7d-3569718-images-thumbs&n=13';
+        icon.id = 'YandexCleanSearch'; // ID
+        icon.alt = 'FREEINTERNET';
+
+        if (window.location.hostname === 'ya.ru') { // для ya.ru т.к. там надо чуть больше короче и чуть правее
+            icon.style.cssText = `
+            width: 2.2rem;
+            height: 2.2rem;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            left: 30px; /* Смещение для ya.ru */
+            vertical-align: middle;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        `;
+        } else {
+            icon.style.cssText = `
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            left: 25px;
+            vertical-align: middle;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        `;
+        }
+        headerLogo.insertBefore(icon,headerLogo.children[1])
+        //headerLogo.appendChild(icon); - prev vers
+        setTimeout(() => {
+            icon.style.opacity = '1';
+            icon.style.transform = 'scale(1)';
+        }, 50);
+
+        icon.addEventListener('click', showPopup);
+    }
+    function removeDuplicateIcon() {
+        const elements = document.querySelectorAll('#YandexCleanSearch');
+        if (elements.length > 1) {
+            for (let i = 1; i < elements.length; i++) {
+                elements[i].remove();
+            }
+            console.log("Лишние элементы #YandexCleanSearch были удалены.");
+        }
+    }
+
+
+    window.addEventListener('load', function() {
+        createPopup();
+        createIcon();
+        autoredirecttolegit()
+        console.log("Создана иконка и заблокирована реклама(в контейнерах)");
+    });
+
+
+        //основной цикл
+    const observer = new MutationObserver(() => {
+        if (window.location.hostname !== 'ya.ru') { // NO YA.RU SHIT
+            if (isHidden) {
+                blockLinksAndAds();
+            }
+            // icon 2-ule check
+            const suggestionPopup = document.querySelector('div.Root.Root_inited > div.HeaderDesktop > header > form > div.mini-suggest__popup');
+            if (suggestionPopup && suggestionPopup.classList.contains('mini-suggest__popup_visible')) {
+                removeBlockedSuggestions();
+            }
+            setTimeout(() => {
+                const secondCheckIcon = document.querySelector('#YandexCleanSearch');
+                if (!secondCheckIcon) {
+                    createIcon();
+                }
+            }, 500);
+            removeDuplicateIcon()
+        } else {
+                const marketFeed = document.querySelector("body > main > div:nth-child(3) > div > div > noindex > div");
+                if (marketFeed) {
+                    blockContainers()
+                    console.log("market-feed удален.");
+                }
+            }
+
+        });
+    observer.observe(document.body, { childList: true, subtree: true });
+    console.log('Yandex Clear Search launched');
 })();
