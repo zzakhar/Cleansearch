@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Yandex CleanSearch
 // @namespace    http://tampermonkey.net/
-// @version      3.2
+// @version      3.3
 // @description  Блокировка страниц по домену и заголовкам, рекламы и прочего дерьма в яндекс.
 // @author       Zzakhar
 // @match        https://yandex.ru/search/*
@@ -72,13 +72,26 @@
         if (window.location.hostname === 'ya.ru') {
             const marketFeed = document.querySelector("body > main > div:nth-child(3) > div > div > noindex > div.market-feed");
             if (marketFeed) {
-                marketFeed.style.display = 'none'; // Скрываем market-feed
+                marketFeed.style.display = 'none';
             }
-        } else if (window.location.pathname.includes('yandex.ru/search')) {
+        }
+        else if (window.location.hostname.includes('yandex.ru') && window.location.pathname.includes('search')) {
             const containerToHide = document.querySelector("body > main > div > div.main__container > div > div > div.content__left > div.VanillaReact.RelatedBottom");
             if (containerToHide) {
                 containerToHide.style.display = 'none';
                 console.log("Рекомендации скрыты.");
+            }
+
+            const searchResultAside = document.querySelector('#search-result-aside');
+            const rsyaGuarantee = searchResultAside ? searchResultAside.querySelector('#rsya-guarantee') : null;
+
+            //rsya-guarantee
+            if (rsyaGuarantee) {
+                const serpList = searchResultAside.querySelector('div.serp-list');
+                if (serpList) {
+                    serpList.remove();
+                    console.log("Контейнер serp-list удален.");
+                }
             }
         }
     }
@@ -252,15 +265,27 @@
         updateBlockCounter();
     }
 
-    //проверка на рекламу, пофикшено 3.2
+    //проверка на рекламу, пофикшено 3.3
     function checkIfAd(result) {
         const adTextIndicators = ['реклама', 'баннер', 'advertise'];
-        const targetElement = result.querySelector(':scope > div > span'); // Используем :scope для поиска в пределах только верхнего уровня
 
-        if (targetElement) {
-            return adTextIndicators.some(text => targetElement.textContent.toLowerCase().includes(text));
+        // Проверяем первый селектор для текущей версии
+        const currentVersionTarget = result.querySelector(':scope > div > span');
+        if (currentVersionTarget) {
+            if (adTextIndicators.some(text => currentVersionTarget.textContent.toLowerCase().includes(text))) {
+                return true; // Реклама найдена в текущей версии
+            }
         }
-        return false;
+
+        // Проверяем второй селектор для старой версии
+        const oldVersionTarget = result.querySelector('div > div.Organic-ContentWrapper.organiccontent-wrapper > div.TextContainer.OrganicText.organictext.text-container.Typo.Typo_text_m.Typo_line_m > span > span');
+        if (oldVersionTarget) {
+            if (adTextIndicators.some(text => oldVersionTarget.textContent.toLowerCase().includes(text))) {
+                return true; // Реклама найдена в старой версии
+            }
+        }
+
+        return false; // Реклама не найдена
     }
 
     // Показать бтн
