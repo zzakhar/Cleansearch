@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Yandex CleanSearch
 // @namespace    http://tampermonkey.net/
-// @version      3.3
+// @version      3.3.1
 // @description  Блокировка страниц по домену и заголовкам, рекламы и прочего дерьма в яндекс.
 // @author       Zzakhar
 // @match        https://yandex.ru/search/*
@@ -89,7 +89,7 @@
             if (rsyaGuarantee) {
                 const serpList = searchResultAside.querySelector('div.serp-list');
                 if (serpList) {
-                    serpList.remove();
+                    serpList.style.display = 'none';
                     console.log("Контейнер serp-list удален.");
                 }
             }
