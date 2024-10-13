@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Yandex CleanSearch
 // @namespace    http://tampermonkey.net/
-// @version      3.0
+// @version      3.2
 // @description  Блокировка страниц по домену и заголовкам, рекламы и прочего дерьма в яндекс.
 // @author       Zzakhar
 // @match        https://yandex.ru/search/*
 // @match        ya.ru/*
-// @grant        none
+// @grant        GM_xmlhttpRequest
+// @grant        GM_info
 // @license      CC BY-NC-ND
 // @downloadURL https://update.greasyfork.org/scripts/512108/Yandex%20CleanSearch.user.js
 // @updateURL https://update.greasyfork.org/scripts/512108/Yandex%20CleanSearch.meta.js
@@ -14,6 +15,10 @@
 
 (function() {
     'use strict';
+
+
+
+
     // auto redirect ya.ru/search to legit page
     function autoredirecttolegit() {
         if (window.location.hostname === "ya.ru" && window.location.pathname === "/search/") {
@@ -25,14 +30,42 @@
         }
     }
 
+
     // Дб локал
     let blockedSites = JSON.parse(localStorage.getItem('blockedSites')) || [];
+     function saveBlockedSites() {
+        localStorage.setItem('blockedSites', JSON.stringify(blockedSites));
+    }
 
     let blockedPropagandaCount = 0;
     let blockedAdsCount = 0;
     let blockedPropaganda = [];
     let isHidden = true;
+    const currentVersion = GM_info.script.version;
 
+
+    // Update notification
+    function checkForUpdates() {
+        GM_xmlhttpRequest({
+            method: 'GET',
+            url: versionCheckUrl,
+            onload: function(response) {
+                if (response.status === 200) {
+                    const newVersionMatch = response.responseText.match(/@version\s+([0-9]+\.[0-9]+\.[0-9]+)/);
+                    if (newVersionMatch) {
+                        const newVersion = newVersionMatch[1];
+                        if (newVersion !== currentVersion) {
+                            alert(`Доступно обновление: версия ${newVersion}.`);
+                        } else {
+                            console.log('У вас самая последняя версия скрипта.');
+                        }
+                    }
+                } else {
+                    console.error('Ошибка при проверке обновлений:', response.statusText);
+                }
+            }
+        });
+    }
 
     //перенес все в 1 функцию для блока дерьма и рекламы
     function blockContainers() {
@@ -184,6 +217,7 @@
             }
         }
     }
+
     // Мейн функция поиска
     function blockLinksAndAds() {
         const results = document.querySelectorAll('.serp-item');
@@ -218,10 +252,15 @@
         updateBlockCounter();
     }
 
-    //
+    //проверка на рекламу, пофикшено 3.2
     function checkIfAd(result) {
-        const adTextIndicators = ['реклама', 'баннер',"ad","advertise"];
-        return adTextIndicators.some(text => result.textContent.toLowerCase().includes(text));
+        const adTextIndicators = ['реклама', 'баннер', 'advertise'];
+        const targetElement = result.querySelector(':scope > div > span'); // Используем :scope для поиска в пределах только верхнего уровня
+
+        if (targetElement) {
+            return adTextIndicators.some(text => targetElement.textContent.toLowerCase().includes(text));
+        }
+        return false;
     }
 
     // Показать бтн
@@ -238,7 +277,7 @@
 
     // Скрыть бтн
     function hideBlockedPropaganda() {
-        console.log("Кнопка 'Убрать' нажата!");
+        console.log("Убрать");
         if (!isHidden) {
             blockedPropaganda.forEach(prop => {
                 prop.style.display = 'none';
@@ -248,10 +287,7 @@
         }
     }
 
-    // дб
-     function saveBlockedSites() {
-        localStorage.setItem('blockedSites', JSON.stringify(blockedSites));
-    }
+
 
 
 
@@ -280,18 +316,21 @@
         showNotification('Все заблокированные сайты были очищены.');
     }
 
-function createPopup() {
-    const popup = document.createElement('div');
-    popup.className = 'custom-popup';
-    popup.style.cssText = `
+    function createPopup() {
+        const popup = document.createElement('div');
+        popup.className = 'custom-popup';
+
+        // тёмная тема или нет
+        const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const isDarkMode = darkModeMediaQuery.matches;
+
+        // Применяем стили для темной или светлой темы
+        popup.style.cssText = `
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background-color: #0e1011;
-        border: 2px solid #970e05; /* Цвет рамки */
-        border-radius: 10px; /* Скругленные углы */
-        box-shadow: 0 0 15px #4c0803, 0 0 30px #8b0903;
+        border-radius: 10px;
         padding: 20px;
         z-index: 9999;
         display: none;
@@ -299,15 +338,36 @@ function createPopup() {
         max-width: 90%;
         transition: transform 0.3s ease, opacity 0.3s ease;
         opacity: 0;
+        ${isDarkMode ? `
+            background-color: #0e1011;
+            border: 2px solid #970e05; /* Красная рамка */
+            box-shadow: 0 0 15px #4c0803, 0 0 30px #8b0903; /* Красное свечение */
+            color: white;
+        ` : `
+            background-color: #f9f9f9;
+            border: 2px solid #007BFF; /* Синяя рамка */
+            box-shadow: 0 0 15px #007BFF, 0 0 30px #00A3FF; /* Синее свечение */
+            color: black;
+        `}
     `;
 
-    // Определяем содержимое попапа в зависимости от текущего URL
-    const currentUrl = window.location.href;
-    if (currentUrl.includes('yandex.ru/search')) {
-        popup.innerHTML = `
+        // Определяем содержимое попапа в зависимости от текущего URL
+        const currentUrl = window.location.href;
+        if (currentUrl.includes('yandex.ru/search')) {
+            popup.innerHTML = `
             <h3>Yandex CleanSearch</h3>
             <input type="text" id="siteInput" placeholder="Домен или заголовок (Например: rutube.ru)"
-                   style="width: 90%; padding: 10px; margin-bottom: 10px;">
+                   style="
+                       width: 90%;
+                       padding: 10px;
+                       margin-bottom: 10px;
+                       border: 2px solid ${isDarkMode ? '#970e05' : '#007BFF'};
+                       background-color: ${isDarkMode ? '#0e1011' : 'white'};
+                       color: ${isDarkMode ? 'white' : 'black'};
+                       border-radius: 10px;
+                       outline: none;
+                       transition: border-color 0.3s ease, box-shadow 0.3s ease;
+                   ">
             <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 10px;">
                 <button id="blockSiteBtn" style="
                     background-color: red;
@@ -349,32 +409,42 @@ function createPopup() {
                 font-size: 20px;
                 font-weight: bold;">&times;</span>
         `;
-    } else if (currentUrl.includes('ya.ru')) {
-        popup.innerHTML = `
-            <h3>Yandex CleanSearch</h3>
-            <p>Скрипт был создан для TamperMonkey и написан для Javascript пользователем zzakhar. <br> Для использования скрипта начните поиск и введите запрос.
-            <br> Через несколько мгновений на странице поиска в левом верхнем углу появится иконка расширения, нажмите на нее и начните конфигурацию. Вы можете блокировать как домены, так и ключевые слова. <br> Спасибо за использование! </p>
-            <span id="closePopupBtn" style="
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                cursor: pointer;
-                font-size: 20px;
-                font-weight: bold;">&times;</span>
+        } else if (currentUrl.includes('ya.ru')) {
+            popup.innerHTML = `
+            <div class="popup-container">
+    <h3>Yandex CleanSearch</h3>
+    <p>
+        Скрипт был создан для TamperMonkey и написан для Javascript пользователем zzakhar. <br>
+        Для использования скрипта начните поиск и введите запрос.
+    </p>
+    <p>
+        Через несколько мгновений на странице поиска в левом верхнем углу появится иконка расширения. Нажмите на неё
+        и начните конфигурацию. Вы можете блокировать как домены, так и ключевые слова.
+    </p>
+    <p>Спасибо за использование!</p>
+    <span id="closePopupBtn" style="
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        cursor: pointer;
+        font-size: 20px;
+        font-weight: bold;">
+        &times;
+    </span>
+</div>
         `;
+        }
+        document.body.appendChild(popup);
+        if (currentUrl.includes('yandex.ru/search')) {
+            document.getElementById('blockSiteBtn').addEventListener('click', blockSite);
+            document.getElementById('unblockSiteBtn').addEventListener('click', unblockSite);
+            document.getElementById('resetBtn').addEventListener('click', resetBlockedSites);
+        }
+        document.getElementById('closePopupBtn').addEventListener('click', () => {
+            popup.style.display = 'none';
+        });
     }
 
-    document.body.appendChild(popup);
-    if (currentUrl.includes('yandex.ru/search')) {
-        document.getElementById('blockSiteBtn').addEventListener('click', blockSite);
-        document.getElementById('unblockSiteBtn').addEventListener('click', unblockSite);
-        document.getElementById('resetBtn').addEventListener('click', resetBlockedSites);
-    }
-
-    document.getElementById('closePopupBtn').addEventListener('click', () => {
-        popup.style.display = 'none';
-    });
-}
 
     function showPopup() {
         const popup = document.querySelector('.custom-popup');
@@ -554,5 +624,5 @@ function createPopup() {
 
         });
     observer.observe(document.body, { childList: true, subtree: true });
-    console.log('Yandex Clear Search launched');
+    console.log('Yandex ClearSearch v',currentVersion,' launched');
 })();
